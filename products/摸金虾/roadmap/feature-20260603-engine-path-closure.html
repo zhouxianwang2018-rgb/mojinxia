@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>引擎路径闭环 · v1.1 Feature 设计 — 摸金虾</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-elevated: #161b22;
+    --bg-card: #1c2129;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #f0883e;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #a371f7;
+    --code-bg: #1a1f2b;
+    --table-stripe: #151b23;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    line-height: 1.7;
+    font-size: 15px;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    font-size: 2em;
+    color: #fff;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 1.5em;
+    color: #fff;
+    margin: 40px 0 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.2em; color: var(--accent); margin: 28px 0 12px; }
+  h4 { font-size: 1.05em; color: var(--text); margin: 20px 0 8px; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  strong { color: #e6edf3; }
+  blockquote {
+    border-left: 3px solid var(--accent2);
+    padding: 10px 16px;
+    margin: 16px 0;
+    background: var(--bg-elevated);
+    color: var(--text-dim);
+    border-radius: 0 6px 6px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--bg-elevated);
+    color: #e6edf3;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13.5px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+    color: var(--accent2);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 14px 0;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: #c9d1d9;
+  }
+  ol, ul { margin: 10px 0 10px 24px; }
+  li { margin: 4px 0; }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+  .meta {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin: 12px 0 24px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  .meta-item { display: flex; gap: 6px; }
+  .meta-label { color: var(--text-dim); }
+  .meta-value { color: var(--text); font-weight: 500; }
+  .status-badge {
+    display: inline-block;
+    background: rgba(210,153,34,0.15);
+    color: var(--yellow);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag {
+    display: inline-block;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin: 0 2px;
+  }
+  .highlight-box {
+    background: var(--bg-card);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .kpi-card .kpi-num { font-size: 2em; font-weight: 700; color: var(--accent); }
+  .kpi-card .kpi-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .kpi-card .kpi-target { font-size: 11px; color: var(--green); margin-top: 2px; }
+
+  .state-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .state-node {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 80px;
+  }
+  .state-node.open { border-color: var(--yellow); }
+  .state-node.holding { border-color: var(--accent); }
+  .state-node.closed { border-color: var(--green); }
+  .state-node.expired { border-color: var(--red); }
+  .state-arrow { color: var(--text-dim); font-size: 16px; }
+
+  @media (max-width: 640px) {
+    body { padding: 20px 14px 60px; font-size: 14px; }
+    h1 { font-size: 1.5em; }
+    .meta { gap: 12px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>引擎路径闭环 · v1.1 Feature 设计</h1>
+
+<div class="meta">
+  <div class="meta-item"><span class="meta-label">文件</span><span class="meta-value">products/摸金虾/roadmap/feature-20260603-engine-path-closure.md</span></div>
+  <div class="meta-item"><span class="meta-label">版本</span><span class="meta-value">v1.1</span></div>
+  <div class="meta-item"><span class="meta-label">日期</span><span class="meta-value">2026-06-03</span></div>
+  <div class="meta-item"><span class="meta-label">状态</span><span class="status-badge">🟡 设计完成，待 Phase 0 验证</span></div>
+</div>
+
+<hr>
+
+<h2>一、业务需求</h2>
+
+<h3>1.1 背景：引擎推荐与实盘执行的脱节</h3>
+
+<p>当前三体联动架构（v1.0）已建立引擎一（早期突破扫描）+ 引擎二（选股排名）的候选池生成能力，但存在系统性断裂：</p>
+
+<table>
+<tr><th>问题</th><th>数据</th><th>影响</th></tr>
+<tr><td>Scenario 触达率低</td><td>首次审计 21%（5/24 触达）</td><td>79% 的策略方案从未被执行层使用</td></tr>
+<tr><td>进攻型 Scenario 零触发</td><td>0/5 从未被激活</td><td>唯一主动进攻路径形同虚设</td></tr>
+<tr><td>尾盘独立选股</td><td>LLM 可在 14:35 即兴选股，绕过引擎推荐</td><td>引擎工作被架空，无法评估推荐价值</td></tr>
+<tr><td>收盘复盘"凭感觉"</td><td>次日 scenarios 来源混杂（引擎结果 + LLM 即兴 + 用户口头偏好）</td><td>策略生成不可复现，无法度量引擎贡献</td></tr>
+</table>
+
+<div class="highlight-box">
+  <strong>一句话诊断：</strong>引擎推荐是"参考"，不是"来源"。场景方案和执行层之间有道透明墙。
+</div>
+
+<h3>1.2 目标</h3>
+
+<p>实现 <strong>引擎 → Scenario → 交易</strong> 的全链路闭合：</p>
+
+<ol>
+  <li><strong>引擎成为唯一标的来源</strong>。任何交易标的必须出自引擎推荐，消灭 LLM 即兴选股。</li>
+  <li><strong>每一条引擎推荐可追踪全生命周期</strong>：从推荐产生 → 进入 Scenario → 被执行/被跳过 → 盈亏结算。</li>
+  <li><strong>量化引擎贡献</strong>。按引擎、按市况、按时间窗口，知道引擎赚了多少、亏了多少、漏了多少。</li>
+</ol>
+
+<h3>1.3 成功标准</h3>
+
+<table>
+<tr><th>指标</th><th>基线（v1.0）</th><th>目标（v1.1 交付）</th></tr>
+<tr><td>Scenario 触达率</td><td>21%</td><td>≥60%</td></tr>
+<tr><td>引擎驱动交易占比</td><td>~0%（数据不可得）</td><td>100%（引擎是唯一来源）</td></tr>
+<tr><td>进攻型 Scenario 触发率</td><td>0/5</td><td>≥50% 的交易日至少触发一次</td></tr>
+<tr><td>按引擎/按市况的绩效归因能力</td><td>无</td><td>基础归因（按引擎、按周）可用</td></tr>
+</table>
+
+<hr>
+
+<h2>二、绩效指标体系</h2>
+
+<h3>2.1 五指标总览</h3>
+
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-num">K1</div><div class="kpi-label">触达率</div><div class="kpi-target">目标 ≥60%</div></div>
+  <div class="kpi-card"><div class="kpi-num">K2</div><div class="kpi-label">胜率</div><div class="kpi-target">目标 ≥55%</div></div>
+  <div class="kpi-card"><div class="kpi-num">K3</div><div class="kpi-label">平均收益</div><div class="kpi-target">目标 正值</div></div>
+  <div class="kpi-card"><div class="kpi-num">K4</div><div class="kpi-label">Scenario 损耗</div><div class="kpi-target">目标 &lt;40%</div></div>
+  <div class="kpi-card"><div class="kpi-num">K5</div><div class="kpi-label">超额收益</div><div class="kpi-target">目标 α ≥ 0</div></div>
+</div>
+
+<table>
+<tr><th>#</th><th>指标</th><th>定义</th><th>统计频率</th><th>闭环目标</th></tr>
+<tr><td>K1</td><td><strong>触达率</strong></td><td>推荐→被执行的推荐占比</td><td>每交易日 / 周滚动</td><td>≥60%</td></tr>
+<tr><td>K2</td><td><strong>胜率</strong></td><td>已完结推荐中盈利占比</td><td>每交易日 / 周滚动</td><td>≥55%</td></tr>
+<tr><td>K3</td><td><strong>平均收益</strong></td><td>已完结推荐的平均盈亏%</td><td>周 / 月滚动</td><td>正值（优于基准）</td></tr>
+<tr><td>K4</td><td><strong>Scenario 损耗</strong></td><td>推荐但未执行的比例及原因分布</td><td>周</td><td>&lt;40%</td></tr>
+<tr><td>K5</td><td><strong>超额收益</strong></td><td>引擎推荐组合 vs 基准</td><td>周 / 月</td><td>≥0（相对科创50/沪深300）</td></tr>
+</table>
+
+<h3>2.2 各指标详细定义</h3>
+
+<h4>K1 · 触达率（Hit Rate）</h4>
+
+<pre><code>触达率 = 至少被交易过一次的推荐数 / 总推荐数 × 100%</code></pre>
+
+<ul>
+  <li>分子：<code>engine_tracker</code> 中 <code>trade_actions</code> 非空的推荐（含 <code>closed</code> 和 <code>holding</code>）</li>
+  <li>分母：<code>engine_tracker</code> 中所有当日/当周产生的推荐</li>
+  <li>分引擎统计：<code>engine1</code> / <code>engine2</code> 各有独立触达率</li>
+  <li>排除：<code>status=expired</code> 的推荐（计入 K4）</li>
+</ul>
+
+<h4>K2 · 胜率（Win Rate）</h4>
+
+<pre><code>胜率 = 已完结推荐中实现盈利的推荐数 / 所有已完结推荐数 × 100%</code></pre>
+
+<ul>
+  <li>分子：<code>status=closed</code> 且 <code>realized_pnl > 0</code> 的推荐</li>
+  <li>分母：<code>status=closed</code> 的推荐（排除 <code>open</code> 和 <code>expired</code>）</li>
+  <li>不按金额加权——统计的是<strong>推荐质量</strong>，不是资金权重</li>
+  <li>分引擎统计</li>
+</ul>
+
+<h4>K3 · 平均收益（Average Return）</h4>
+
+<pre><code>平均收益 = Σ(已完结推荐的 realized_pnl_pct) / 已完结推荐数</code></pre>
+
+<ul>
+  <li><code>realized_pnl_pct</code>：该推荐对应的所有交易加权平均盈亏%</li>
+  <li>排除 <code>open</code> 状态的推荐（未完结不计算）</li>
+  <li>同时提供加权平均（按交易金额加权）作为辅助参考</li>
+  <li>分引擎 / 合并统计</li>
+</ul>
+
+<h4>K4 · Scenario 损耗（Scenario Leakage）</h4>
+
+<pre><code>损耗率 = (未执行推荐数 + 过期推荐数) / 总推荐数 × 100%</code></pre>
+
+<p>原因分布：</p>
+<table>
+<tr><th>损耗类型</th><th>含义</th></tr>
+<tr><td><code>not_triggered</code></td><td>Scenario 存在但盘中未达到触发条件</td></tr>
+<tr><td><code>ranked_out</code></td><td>被更高优先级 Scenario 挤出（只在 20 条淘汰时发生）</td></tr>
+<tr><td><code>skipped</code></td><td>Scenario 被触发但执行层主动跳过（风控/仓位/判断）</td></tr>
+<tr><td><code>engine_expired</code></td><td>推荐超过有效期（T+1 收盘后仍未执行）</td></tr>
+</table>
+<ul>
+  <li>每种原因统计占比，周报中展示损耗结构</li>
+  <li><code>ranked_out</code> 在 Phase 1 去除上限后应趋近于 0</li>
+</ul>
+
+<h4>K5 · 超额收益（Excess Return）</h4>
+
+<pre><code>超额收益 = 引擎推荐等权组合周/月收益 — 基准周/月收益</code></pre>
+
+<ul>
+  <li>基准：科创50（权重 60%）+ 沪深300（权重 40%）</li>
+  <li>计算方式：每周六取当周所有 <code>closed</code> 推荐的 <code>realized_pnl_pct</code> 等权平均，减去同期基准涨跌幅</li>
+  <li>不模拟资金分配，只做等权收益率（衡量选股能力，隔离仓位管理）</li>
+</ul>
+
+<hr>
+
+<h2>三、技术方案</h2>
+
+<h3>3.1 engine_tracker.json 文件设计</h3>
+
+<h4>路径与生命周期</h4>
+
+<pre><code>~/.hermes/cron/state/moni/engine_tracker.json</code></pre>
+
+<ul>
+  <li>不纳入 git（已加入 <code>.gitignore</code>）</li>
+  <li>每次写入为全量覆盖（单写者：收盘复盘负责写入；执行层通过 <code>patch</code> 追加 <code>trade_actions</code>）</li>
+  <li>长期保留（不按日归档），用于跨周跨月统计和回溯</li>
+</ul>
+
+<h4>字段说明</h4>
+
+<table>
+<tr><th>字段</th><th>类型</th><th>写入者</th><th>说明</th></tr>
+<tr><td><code>id</code></td><td>string</td><td>收盘复盘</td><td>格式 <code>{engine}-{date}-{seq}</code></td></tr>
+<tr><td><code>engine</code></td><td>enum</td><td>收盘复盘</td><td><code>engine1</code> / <code>engine2</code></td></tr>
+<tr><td><code>date</code></td><td>date</td><td>收盘复盘</td><td>推荐产生的交易日</td></tr>
+<tr><td><code>code</code></td><td>string</td><td>收盘复盘</td><td>股票代码</td></tr>
+<tr><td><code>name</code></td><td>string</td><td>收盘复盘</td><td>股票简称</td></tr>
+<tr><td><code>concept</code></td><td>string</td><td>收盘复盘</td><td>所属概念板块</td></tr>
+<tr><td><code>stage</code></td><td>string?</td><td>收盘复盘</td><td>引擎一专用：STAGE2/STAGE3</td></tr>
+<tr><td><code>engine_score</code></td><td>float</td><td>收盘复盘</td><td>引擎给的原始评分</td></tr>
+<tr><td><code>rank_priority</code></td><td>int</td><td>收盘复盘</td><td>综合排名后的优先级（1 最高）</td></tr>
+<tr><td><code>status</code></td><td>enum</td><td>收盘复盘 + 执行层</td><td><code>open</code> → <code>holding</code> → <code>closed</code> / <code>expired</code></td></tr>
+<tr><td><code>trade_actions</code></td><td>array</td><td>午盘/尾盘执行</td><td>交易记录追加（含 <code>forced_sell</code> 标记）</td></tr>
+<tr><td><code>realized_pnl</code></td><td>float?</td><td>收盘复盘</td><td>已实现盈亏（元）</td></tr>
+<tr><td><code>leakage_reason</code></td><td>string?</td><td>收盘复盘</td><td>未触达原因（expired 时）</td></tr>
+</table>
+
+<h3>3.2 写入职责与时机</h3>
+
+<pre><code>14:20  引擎一 CRON ──→ 写入 candidate_pool.engine1（不改 tracker）
+14:25  引擎二 CRON ──→ 写入 candidate_pool.engine2.ranked（不改 tracker）
+14:35  尾盘执行 ────→ 若操作标的在 tracker open 列表中 → append trade_actions
+15:05  收盘复盘 ────→ Step 4: 遍历引擎推荐 → upsert engine_tracker
+                     ├─ 新推荐：追加 open 记录
+                     ├─ 已存在 open：检查是否过期 → expired / 保持 open
+                     ├─ 已平仓：计算 P&L → closed
+                     └─ 写全量 engine_tracker.json
+次日   午盘执行 ────→ 若操作标的在 tracker open 列表中 → append trade_actions</code></pre>
+
+<h3>3.3 推荐生命周期（全状态机）</h3>
+
+<h4>四态模型</h4>
+
+<pre><code>                    trigger_window
+                    (T日15:05 → T+1日15:05)
+推荐产生 ──→ open ──────────────────────→ expired
+  (T日15:05)  │   (超期未买入)
+              │
+              │ 触发买入
+              ▼
+           holding ────→ 全部卖出 ──→ closed
+              │
+              │ 超期未卖出
+              │ (T+5日14:35 强制平仓)
+              └──────────────────→ closed
+              (forced_sell=true)</code></pre>
+
+<table>
+<tr><th>状态</th><th>含义</th><th>触发条件</th><th>终态？</th></tr>
+<tr><td><span class="tag" style="border-color:var(--yellow);color:var(--yellow)">open</span></td><td>推荐已生成，等待盘中触发买入</td><td>收盘复盘 Step 4 写入</td><td>否</td></tr>
+<tr><td><span class="tag" style="border-color:var(--accent);color:var(--accent)">holding</span></td><td>已被买入，持仓中</td><td>午盘/尾盘执行买入操作</td><td>否</td></tr>
+<tr><td><span class="tag" style="border-color:var(--green);color:var(--green)">closed</span></td><td>全部卖出，盈亏已结算</td><td>主动卖完 或 T+5 强制平仓</td><td>✅</td></tr>
+<tr><td><span class="tag" style="border-color:var(--red);color:var(--red)">expired</span></td><td>触发窗口内未买入，推荐作废</td><td>T+1 收盘复盘检测超期</td><td>✅</td></tr>
+</table>
+
+<h4>时间窗口</h4>
+
+<pre><code>交易日 T               T+1              T+2  ...  T+5
+    │                   │                 │          │
+    ├─ 15:05 ───────────┼─ 15:05 ─────────┼──────────┼─ 14:35
+    │  推荐产生          │  trigger_window │          │  holding 截止
+    │  status=open       │  关闭           │          │  强制平仓
+    │                    │  未买入→expired │          │
+    └─ trigger_window ──┘                 └─ holding ─┘
+       (买入窗口)                           (持仓窗口)</code></pre>
+
+<h4>状态转换规则</h4>
+
+<table>
+<tr><th>当前状态</th><th>事件</th><th>新状态</th><th>执行者</th></tr>
+<tr><td><code>open</code></td><td>T+1 收盘复盘，未被买入</td><td><code>expired</code></td><td>收盘复盘</td></tr>
+<tr><td><code>open</code></td><td>午盘/尾盘执行买入</td><td><code>holding</code></td><td>执行层 CRON</td></tr>
+<tr><td><code>holding</code></td><td>全部卖出（主动）</td><td><code>closed</code></td><td>收盘复盘</td></tr>
+<tr><td><code>holding</code></td><td>T+5 14:35，仍有持仓</td><td><code>closed</code></td><td>尾盘执行</td></tr>
+<tr><td><code>holding</code></td><td>部分卖出</td><td><code>holding</code></td><td>不变</td></tr>
+<tr><td><code>expired</code></td><td colspan="2">终态，不可逆</td><td>—</td></tr>
+<tr><td><code>closed</code></td><td colspan="2">终态，不可逆</td><td>—</td></tr>
+</table>
+
+<h3>3.4 匹配规则</h3>
+
+<pre><code>1. 按 code 查找 engine_tracker.recommendations 中 status=open 的记录
+2. 若找到多条（同一标的多次推荐），按 rank_priority 最小（优先级最高）匹配
+3. 若找到一个交易日内的多条 open 记录（不同引擎推荐），均追加 trade_actions
+4. 尾盘买入必须匹配 open 推荐 → 若无匹配，拒绝交易（引擎唯一来源原则）</code></pre>
+
+<hr>
+
+<h2>四、风险与上线</h2>
+
+<h3>4.1 上线策略</h3>
+
+<table>
+<tr><th>项目</th><th>方案</th></tr>
+<tr><td>上线时间</td><td>Scenario 重写 + 绩效追踪同一天（周六）上线，不设观察期。回溯验证随后上线</td></tr>
+<tr><td>验证手段</td><td>改完后 <code>cronjob run</code> 全部 7 个 CRON，检查无 error</td></tr>
+<tr><td>失败处理</td><td>上线后首个交易日失败 → 当天不交易，周六修，下周一重试</td></tr>
+</table>
+
+<h3>4.2 回滚路径</h3>
+
+<table>
+<tr><th>场景</th><th>操作</th></tr>
+<tr><td>Scenario 重写有问题</td><td>回滚收盘复盘 CRON prompt 到 v1.0</td></tr>
+<tr><td>engine_tracker 写入失败</td><td>回滚收盘复盘 / 执行层 CRON prompt；tracker 文件删除重建</td></tr>
+<tr><td>引擎唯一来源导致交易受阻</td><td>尾盘 CRON 恢复到 v1.0 允许独立选股</td></tr>
+</table>
+<p>所有回滚走 <code>DEVELOPMENT.md</code> 三条回滚路径（Git 历史 / tag / <code>.backup</code>）。</p>
+
+<hr>
+
+<h2>附录 A：CRON 改动对照</h2>
+
+<table>
+<tr><th>CRON</th><th>v1.0 现状</th><th>v1.1 改动</th></tr>
+<tr><td>盘前定调</td><td>读取策略文件</td><td><span class="tag">无改动</span></td></tr>
+<tr><td>午盘执行</td><td>读取策略文件 scenarios</td><td><span class="tag" style="color:var(--accent);border-color:var(--accent)">+</span> 更新 engine_tracker.trade_actions</td></tr>
+<tr><td>午后侦察</td><td>独立侦察</td><td><span class="tag">无改动</span></td></tr>
+<tr><td>引擎一扫描</td><td>写入 candidate_pool.engine1</td><td><span class="tag">无改动</span></td></tr>
+<tr><td>引擎二排名</td><td>读 engine1 + 写入 engine2.ranked</td><td><span class="tag">无改动</span></td></tr>
+<tr><td>尾盘执行</td><td>读候选池 + 可独立选股</td><td><span class="tag" style="color:var(--accent2);border-color:var(--accent2)">改</span> 禁止独立选股 + tracker 写入</td></tr>
+<tr><td>收盘复盘</td><td>读 ranked + 生成 scenarios</td><td><span class="tag" style="color:var(--accent2);border-color:var(--accent2)">改</span> Scenario 重写 + 引擎来源化 + tracker 写入</td></tr>
+</table>
+
+<h2>附录 B：v1.0 → v1.1 数据流变化</h2>
+
+<pre><code>v1.0:
+引擎一 ─→ candidate_pool.engine1 ─┐
+引擎二 ─→ candidate_pool.engine2 ─┤
+LLM 即兴 ─────────────────────────┼─→ scenarios（来源混杂，上限 14）─→ 执行层
+用户偏好 ─────────────────────────┘
+
+v1.1:
+引擎一 ─→ candidate_pool.engine1 ─┐
+引擎二 ─→ candidate_pool.engine2 ─┤
+                                  ├─→ engine_tracker（所有推荐，可追踪）
+                                  └─→ scenarios（引擎唯一来源，无限）─→ 执行层
+执行层 ─→ engine_tracker.trade_actions（追加交易记录）
+周六审计 ─→ engine_tracker_summary.json（K1-K5 快照）</code></pre>
+
+<h2>附录 C：开工前置检查（Phase 0）</h2>
+
+<p>上线前必须在真实数据上确认以下 5 项全部通过：</p>
+
+<table>
+<tr><th>#</th><th>验证项</th><th>通过条件</th></tr>
+<tr><td>V1</td><td>引擎一 → 策略文件</td><td><code>candidate_pool.engine1</code> 非空，含 STAGE2/3</td></tr>
+<tr><td>V2</td><td><code>engine2_ranker.py</code> 可执行</td><td>output 目录有内容，<code>engine2.ranked</code> 非空</td></tr>
+<tr><td>V3</td><td>尾盘读候选池</td><td>尾盘输出引用候选池，不报读取异常</td></tr>
+<tr><td>V4</td><td>risk_state 一致性</td><td><code>risk_state.level</code> 与 <code>current_strategy.mode</code> 匹配</td></tr>
+<tr><td>V5</td><td>全部 CRON 健康</td><td>7 个 CRON <code>last_status</code> 全部 <code>ok</code></td></tr>
+</table>
+
+<div class="highlight-box">
+  <strong>阻断规则：</strong>V2 失败 → 不开工，先修脚本。V4 失败 → 立即 hotfix。V1/V3 失败 → 可开工，限期内修复。
+</div>
+
+</body>
+</html>
