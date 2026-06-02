@@ -8,6 +8,7 @@ A 股全自动模拟盘交易系统。七道 CRON 接力流水线覆盖 09:00→
 
 | 文档 | 说明 |
 |------|------|
+| [DEVELOPMENT.md](DEVELOPMENT.md) | **开发手册**（迭代节奏 / 版本管理 / 回滚） |
 | [changelog.md](changelog.md) | 版本历史（v0.1 → v1.0） |
 | [roadmap.md](roadmap.md) | 路线图 |
 | [architecture.md](architecture.md) | 架构决策记录（ADR） |

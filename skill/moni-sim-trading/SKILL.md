@@ -374,16 +374,55 @@ else:
 - 回滚用 `[REVERTED]` 标注，不删除
 
 ---
-
 ## 运维要点
 
-- 复盘 CRON 必须检查 `execution_log` deviation，统计偏离次数和 root_cause
-- `consecutive_loss_days` 每日亏损 +1，盈利/空仓归零
-- 策略文件超过 30 天移入 archive/
-- cron 交付目标统一为 `qqbot:458685AEDAC4C90FCF3C8EF692BBC9DC`
+- 复盘CRON必须检查 `execution_log` 中的 deviation，统计偏离次数和 root_cause
+- `consecutive_loss_days` 在每日亏损后 +1，盈利日归零
+- 策略文件超过30天移入archive/
+- 任何CRON发现 index 指向不存在的文件，自动以最近策略为基准重建
+- cron交付目标统一为 `qqbot:458685AEDAC4C90FCF3C8EF692BBC9DC`
 - 报纸图片：盘前定调 + 引擎二排名 + 收盘复盘（`premarket_image.py --type {premarket|close}`）
 - 修改 cron prompt 后 `cronjob run` 被 Step -1 拦截 → 直接生成样图验证
 - **平衡计分卡**：`python -m balanced_scorecard`，四维评估，嵌入收盘复盘 Step 6。详见 `references/balanced-scorecard.md`
 - **Scenario 审计**：`python3 ~/.hermes/scripts/scenario_audit.py`，建议每周六跑。详见 `references/scenario-audit.md`
 - 触达率 < 30% 自动告警
-- **产品设计文档**：`~/.hermes/products/摸金虾/`（changelog / roadmap / ADR）
+- **产品设计文档**：`~/.hermes/products/摸金虾/`（changelog / roadmap / ADR），与 skill 操作手册分离
+- **GitHub 版本管理**：仓库 `zhouxianwang2018-rgb/mojinxia`，同步脚本 `sync-to-git.sh`（见下方迭代运维）
+
+## 迭代运维机制
+
+### 三层节奏
+
+| 层级 | 频率 | 触发 | 产出 |
+|------|------|------|------|
+| **盯盘** | 每日 15:05 后 | 收盘复盘结束 | 观察 CRON 健康 / 策略一致性 / 硬约束穿透。不主动改代码，问题记入 `issues.json` |
+| **审计+排期** | 每周六 | 定时或手动 | 平衡计分卡 + Scenario 审计 + 缺陷分类排期（P0 hotfix / P1 周六改 / P2 排下周 / P3 放 roadmap） |
+| **大版本** | 每月末 | 月目标核算 | 月复盘 + roadmap 刷新 + 版本号升级 |
+
+### 变更安全规则
+
+- **盘中不改**：09:00-15:05 不修改任何 CRON prompt
+- **改完必跑验证**：`cronjob run` 或用当天数据生成样图
+- **双写**：改 CRON prompt 同时更新 skill 对应段落
+- **改 3 个以上 CRON → 版本号 +0.1**
+
+### GitHub 同步
+
+本地文件 → git repo 同步脚本（待创建 `~/.hermes/scripts/sync-to-git.sh`）：
+
+```
+docs/        ← ~/.hermes/products/摸金虾/*.md
+skill/       ← ~/.hermes/skills/finance/moni-sim-trading/
+scripts/     ← ~/.hermes/scripts/{moni_engine,calc_risk_state,...}.py
+crons/       ← 从 jobs.json 导出 7 个 CRON prompt
+```
+
+每次版本更新后执行 `bash ~/.hermes/scripts/sync-to-git.sh "v1.x: 描述"` 一键同步+提交+推送。
+
+### 运行时文件
+
+```
+~/.hermes/cron/state/moni/
+├── issues.json              ← 待修复清单 {id, found_at, severity, description, status}
+└── audit/                   ← 每周自动生成的计分卡/审计报告
+```
