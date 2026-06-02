@@ -1,0 +1,53 @@
+{
+  "trading_day": "2026-06-03",
+  "parent_strategy": "2026-06-02",
+  "status": "pending",
+  "created_by": "收盘复盘",
+  "created_at": "2026-06-02T15:12:09.382743",
+  "valid_until": "2026-06-03T15:00:00+08:00",
+  "closed_at": null,
+  "risk_state": {
+    "level": "normal",
+    "level_reason": "连续盈利，风险正常",
+    "consecutive_loss_days": 0,
+    "drawdown_from_peak": 0.0198,
+    "peak_total": 1130323.0,
+    "hard_position_cap": 0.8,
+    "hard_single_stock_cap": 0.4,
+    "new_position_ban": false,
+    "stop_loss_triggered": false
+  },
+  "current_strategy": {
+    "id": "复盘-2026-06-02",
+    "mode": "conservative",
+    "core_thesis": "✅ 熔断解除：6/2空仓持平，consecutive_loss_days重置为0。回撤仍-1.98%（距峰值¥1,130,323），以保守模式恢复交易。首日建仓上限¥200,000，单票≤40%。优先半导体/科创方向（6/2午后V反+1.66%），分2-3笔建仓，控制单个买入在¥60,000-100,000之间。止损纪律：单票日内浮亏>5%立即止损，总仓位不超过40%。",
+    "max_total_buy_today": 200000,
+    "max_single_trade_pct": 0.4,
+    "per_stock": {},
+    "scenarios": [
+      {
+        "if": "半导体板块延续6/2午后反弹，科创50开盘+0.5%以上",
+        "then": "优先建仓半导体设备/材料方向（如688012中微公司、688432有研硅），单票≤¥80,000，分2笔",
+        "type": "sector_momentum"
+      },
+      {
+        "if": "大盘平开震荡，无明显方向",
+        "then": "等待10:00后确认方向再建仓。关注科创50/半导体板块资金流向（主力净额由负转正为信号）",
+        "type": "wait_confirm"
+      },
+      {
+        "if": "大盘低开或外围大跌>1%",
+        "then": "延迟建仓至午后，维持空仓观察。不追跌",
+        "type": "defensive"
+      },
+      {
+        "if": "单票持仓浮亏>5%",
+        "then": "无条件止损，市价卖出全部该股持仓",
+        "type": "stop_loss"
+      }
+    ],
+    "valid_until": "2026-06-03T15:00:00+08:00"
+  },
+  "overrides": [],
+  "execution_log": []
+}

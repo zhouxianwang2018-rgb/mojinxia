@@ -20,7 +20,7 @@ git pull origin main 2>/dev/null || true
 
 # 2. 存档当前 Hermes 状态
 BACKUP_DIR="$REPO/.backup/$TIMESTAMP"
-mkdir -p "$BACKUP_DIR/crons"
+mkdir -p "$BACKUP_DIR"/{crons,skill/moni-sim-trading/references,state}
 
 # 导出 CRON prompts
 python3 -c "
@@ -35,8 +35,22 @@ for j in data['jobs']:
         short = name.replace('摸金虾·','')
         with open(f'$BACKUP_DIR/crons/{short}.md','w') as f:
             f.write(j.get('prompt',''))
-        print(f'  backup: {short}.md')
+        print(f'  backup: crons/{short}.md')
 " 2>/dev/null
+
+# 备份 issues.json（git 纳入）
+[ -f "$HERMES/cron/state/moni/issues.json" ] && cp "$HERMES/cron/state/moni/issues.json" "$BACKUP_DIR/" && echo "  backup: issues.json"
+
+# 备份 skill（git 纳入）
+cp "$HERMES/skills/finance/moni-sim-trading/SKILL.md" "$BACKUP_DIR/skill/moni-sim-trading/"
+cp "$HERMES/skills/finance/moni-sim-trading/references/"*.md "$BACKUP_DIR/skill/moni-sim-trading/references/" 2>/dev/null
+echo "  backup: skill/"
+
+# 备份策略文件（仅本地，不进 git）
+STATE_DIR="$HERMES/cron/state/moni"
+[ -f "$STATE_DIR/strategy_index.json" ] && cp "$STATE_DIR/strategy_index.json" "$BACKUP_DIR/state/" && echo "  backup: state/strategy_index.json"
+TODAY=$(date +%Y-%m-%d)
+[ -f "$STATE_DIR/strategies/$TODAY.json" ] && cp "$STATE_DIR/strategies/$TODAY.json" "$BACKUP_DIR/state/" && echo "  backup: state/$TODAY.json"
 
 echo "📦 快照: .backup/$TIMESTAMP"
 
