@@ -1,0 +1,15 @@
+{
+  "issues": [],
+  "schema_version": "1.0",
+  "description": "摸金虾待修复清单。每日盯盘自动/手动写入，每周六排期修复。",
+  "fields": {
+    "id": "唯一标识（自增）",
+    "found_at": "发现日期 YYYY-MM-DD",
+    "severity": "P0/P1/P2/P3",
+    "source": "信号来源（cron_health/strategy_consistency/hard_constraint/manual）",
+    "description": "问题描述",
+    "cron_affected": "受影响的 CRON 名称（如无则为 null）",
+    "status": "open/in_progress/resolved/wontfix",
+    "resolved_in": "修复版本号（如 v1.0.2）"
+  }
+}
