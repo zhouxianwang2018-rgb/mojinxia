@@ -6,7 +6,7 @@
 
 | 文件 | 描述 | 目标版本 | 状态 |
 |------|------|:---:|:---:|
-| [20260603-engine-path-closure.md](./20260603-engine-path-closure.md) | 引擎路径闭环：Scenario 重写 + 引擎唯一来源 + 绩效追踪 + 回溯验证 | v1.1 | 🟡 设计完成，待 Phase 0 |
+| [feature-20260603-engine-path-closure.md](./feature-20260603-engine-path-closure.md) | 引擎路径闭环：Scenario 重写 + 引擎唯一来源 + 绩效追踪 + 回溯验证 | v1.1 | 🟡 设计完成，待 Phase 0 |
 
 ## 积压（Backlog）
 

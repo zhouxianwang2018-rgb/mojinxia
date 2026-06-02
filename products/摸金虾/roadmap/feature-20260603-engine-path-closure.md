@@ -1,6 +1,6 @@
 # 引擎路径闭环 · v1.1 Feature 设计
 
-> 文件：`products/摸金虾/roadmap/20260603-engine-path-closure.md`  
+> 文件：`products/摸金虾/roadmap/feature-20260603-engine-path-closure.md`  
 > 版本：v1.1  
 > 日期：2026-06-03  
 > 状态：🟡 设计完成，待 Phase 0 验证后开工  
