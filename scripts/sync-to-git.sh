@@ -113,8 +113,8 @@ fi
 if [ -n "$1" ]; then
     MSG="$1"
 else
-    # 从 changelog 提取最新版本号
-    VER=$(head -20 docs/changelog.md | grep -oP 'v[\d.]+' | head -1)
+    # 从迭代计划提取最新版本号
+    VER=$(grep -oP '^## v[\d.]+' docs/roadmap/迭代计划.md | head -1 | grep -oP 'v[\d.]+')
     [ -z "$VER" ] && VER="v1.0"
     MSG="$VER: 自动同步 $(date +%Y-%m-%d)"
 fi

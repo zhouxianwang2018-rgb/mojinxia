@@ -10,7 +10,7 @@ A 股全自动模拟盘交易系统。七道 CRON 接力流水线覆盖 09:00→
 |------|------|
 | **系统架构** | [docs/architecture.md](docs/architecture.md) — 三体联动 + CRON 分层 + ADR |
 | **开发手册** | [docs/development.md](docs/development.md) — 环境/脚本/调试/迭代节奏 |
-| **版本历史** | [changelog.md](changelog.md) — 里程碑级版本变更 |
+| **版本历史** | [roadmap/迭代计划.md](roadmap/迭代计划.md) — 唯一版本规划源，changelog 由此提取 |
 | **路线图** | [roadmap/](roadmap/) — 需求清单 / 问题清单 / 迭代计划 / SRS 文件 |
 
 ## 规划层入口
