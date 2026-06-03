@@ -131,7 +131,7 @@ def main(strategy_file: str | None = None):
     with open(strategy_file) as f:
         strategy = json.load(f)
     
-    e1_pool = strategy.get('candidate_pool', {}).get('engine1', {})
+    e1_pool = strategy.get('current_strategy', {}).get('candidate_pool', {}).get('engine1', {})
     e1_stage3 = e1_pool.get('stage3', [])
     e1_stage2 = e1_pool.get('stage2', [])
     e1_all = e1_stage3 + e1_stage2
@@ -181,7 +181,7 @@ def main(strategy_file: str | None = None):
     e2_codes = {s[0] for s in stocks[:15]}
     cross = e1_codes & e2_codes
     
-    strategy['candidate_pool']['engine2'] = {
+    strategy['current_strategy']['candidate_pool']['engine2'] = {
         'written_by': '引擎二',
         'written_at': datetime.now().isoformat(),
         'query': '均线多头排列 换手率>5% 市值>50亿',
