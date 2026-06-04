@@ -1,6 +1,6 @@
 # 摸金虾 · 模拟盘交易系统
 
-> v1.0.1 · 2026-06-03
+> v1.1 · 2026-06-04
 
 A 股全自动模拟盘交易系统。七道 CRON 接力流水线覆盖 09:00→15:05 全交易日，策略文件驱动状态机，双引擎选股 + 三体联动，五级硬编码风控。
 
@@ -8,9 +8,14 @@ A 股全自动模拟盘交易系统。七道 CRON 接力流水线覆盖 09:00→
 
 | 要看什么 | 去哪 |
 |------|------|
+| **复刻指南** | [SETUP.md](SETUP.md) — 从零搭建，环境/依赖/API Key/验证 |
 | **系统架构** | [docs/architecture.md](docs/architecture.md) — 三体联动 + CRON 分层 + ADR |
+| **策略文件 Schema** | [docs/strategy-schema.md](docs/strategy-schema.md) — 数据总线格式，字段读写矩阵 |
+| **CRON 元数据** | [docs/cron-commands.md](docs/cron-commands.md) — 7 条 cron 完整参数 + 创建命令 |
+| **数据流 + API 矩阵** | [docs/data-flow.md](docs/data-flow.md) — 数据流向图、字段读写矩阵、API 依赖 |
 | **开发手册** | [docs/development.md](docs/development.md) — 环境/脚本/调试/迭代节奏 |
-| **版本历史** | [roadmap/迭代计划.md](roadmap/迭代计划.md) — 唯一版本规划源，changelog 由此提取 |
+| **故障排查** | [docs/troubleshooting.md](docs/troubleshooting.md) — 常见问题 + 恢复步骤 |
+| **版本历史** | [roadmap/迭代计划.md](roadmap/迭代计划.md) — 唯一版本规划源 |
 | **路线图** | [roadmap/](roadmap/) — 需求清单 / 问题清单 / 迭代计划 / SRS 文件 |
 
 ## 规划层入口
