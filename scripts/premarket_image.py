@@ -13,26 +13,25 @@
 import sys, os, json, subprocess, re
 from datetime import datetime
 
-OUTPUT_DIR = "/tmp"
+OUTPUT_DIR = os.path.expanduser("~/.hermes/tmp/premarket")
 PLAYWRIGHT_CWD = os.path.expanduser("~/.hermes/hermes-agent")
 PLAYWRIGHT_NODE_PATH = os.path.join(PLAYWRIGHT_CWD, "node_modules")
 
 # ── HTML 模板 ────────────────────────────────────────────
 CSS = """
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #f0eee8; font-family: 'Noto Serif SC','SimSun','STSong',serif; display: flex; justify-content: center; padding: 40px 20px; }
+  body { background: #f0eee8; font-family: 'Noto Serif CJK SC','Noto Serif SC','SimSun',serif; display: flex; justify-content: center; padding: 40px 20px; }
   .paper { width: 800px; background: #fffdf8; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
   .masthead { background: linear-gradient(180deg, #b30000 0%, #8b0000 100%); color: white; text-align: center; padding: 24px 40px 16px; border-bottom: 3px solid #660000; }
-  .masthead h1 { font-size: 36px; font-weight: 900; letter-spacing: 6px; font-family: 'Noto Serif SC','SimHei',serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-  .masthead .subtitle { font-size: 13px; letter-spacing: 3px; opacity: 0.85; margin-top: 2px; font-family: 'Noto Sans SC',sans-serif; }
-  .dateline { background: #faf7f0; border-bottom: 2px solid #b30000; padding: 6px 40px; font-size: 12px; color: #888; display: flex; justify-content: space-between; font-family: 'Noto Sans SC',sans-serif; }
+  .masthead h1 { font-size: 36px; font-weight: 900; letter-spacing: 6px; font-family: 'Noto Serif CJK SC','Noto Serif SC','SimHei',serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+  .masthead .subtitle { font-size: 13px; letter-spacing: 3px; opacity: 0.85; margin-top: 2px; font-family: 'Noto Sans CJK SC','Noto Sans SC',sans-serif; }
+  .dateline { background: #faf7f0; border-bottom: 2px solid #b30000; padding: 6px 40px; font-size: 12px; color: #888; display: flex; justify-content: space-between; font-family: 'Noto Sans CJK SC','Noto Sans SC',sans-serif; }
   .content { padding: 24px 40px 32px; }
   .section-title { font-size: 20px; font-weight: 900; color: #b30000; border-left: 4px solid #b30000; padding-left: 12px; margin: 24px 0 12px; }
   .section-title:first-child { margin-top: 0; }
   .news-item { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #e8e4d8; }
   .news-item:last-child { border-bottom: none; }
-  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 2px; margin-right: 6px; font-family: 'Noto Sans SC',sans-serif; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 2px; margin-right: 6px; font-family: 'Noto Sans CJK SC','Noto Sans SC',sans-serif; }
   .tag-red { background: #b30000; color: white; }
   .tag-orange { background: #d4740e; color: white; }
   .tag-blue { background: #2471a3; color: white; }
@@ -40,7 +39,7 @@ CSS = """
   .news-item p { font-size: 14px; line-height: 1.8; color: #333; margin-top: 4px; }
   .news-item strong { color: #1a1a1a; }
   table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
-  table th { background: #b30000; color: white; padding: 8px 10px; text-align: center; font-weight: 700; font-family: 'Noto Sans SC',sans-serif; font-size: 12px; }
+  table th { background: #b30000; color: white; padding: 8px 10px; text-align: center; font-weight: 700; font-family: 'Noto Sans CJK SC','Noto Sans SC',sans-serif; font-size: 12px; }
   table td { padding: 7px 10px; border-bottom: 1px solid #e8e4d8; text-align: center; color: #333; }
   table tr:nth-child(even) td { background: #faf7f0; }
   .highlight-box { background: #fff8f0; border: 1px solid #e8c8a0; border-left: 4px solid #b30000; padding: 14px 18px; margin: 14px 0; font-size: 13px; color: #5c3a1e; line-height: 1.8; }
@@ -49,7 +48,7 @@ CSS = """
   .conclusion-box h3 { color: #b30000; font-size: 16px; margin-bottom: 8px; text-align: center; letter-spacing: 2px; }
   .conclusion-box table { margin: 0; }
   .conclusion-box table th { background: #660000; }
-  .footer { border-top: 2px solid #b30000; padding: 10px 40px; text-align: center; font-size: 11px; color: #aaa; font-family: 'Noto Sans SC',sans-serif; }
+  .footer { border-top: 2px solid #b30000; padding: 10px 40px; text-align: center; font-size: 11px; color: #aaa; font-family: 'Noto Sans CJK SC','Noto Sans SC',sans-serif; }
 """
 
 TITLE_MAP = {
@@ -246,9 +245,26 @@ def screenshot(html_content):
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
+    # Chromium paths: snap > system > playwright-bundled
+    chromium_paths = [
+        "/snap/chromium/current/usr/lib/chromium-browser/chrome",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+    ]
+
     js = f"""const {{ chromium }} = require('playwright');
 (async () => {{
-  const browser = await chromium.launch();
+  const paths = {json.dumps(chromium_paths)};
+  let browser = null;
+  for (const p of paths) {{
+    try {{
+      browser = await chromium.launch({{ executablePath: p, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }});
+      break;
+    }} catch (e) {{}}
+  }}
+  if (!browser) {{
+    browser = await chromium.launch({{ args: ['--no-sandbox', '--disable-setuid-sandbox'] }});
+  }}
   const page = await browser.newPage();
   await page.setViewportSize({{ width: 860, height: 100 }});
   await page.goto('file://{html_path}', {{ waitUntil: 'networkidle', timeout: 15000 }});
@@ -270,13 +286,10 @@ def screenshot(html_content):
         cwd=PLAYWRIGHT_CWD, env=env,
         capture_output=True, text=True, timeout=30
     )
-
+    os.unlink(js_path)
     if result.returncode != 0:
         print(f"ERROR: {result.stderr}", file=sys.stderr)
         sys.exit(1)
-
-    # Clean up temp files
-    os.unlink(js_path)
     return png_path
 
 
