@@ -55,6 +55,14 @@ TITLE_MAP = {
     "premarket": ("摸 金 虾 · 盘 前 早 参", "MO JIN XIA · PRE-MARKET BRIEFING", "盘前"),
     "close":     ("摸 金 虾 · 收 盘 复 盘", "MO JIN XIA · CLOSING REVIEW",      "收盘"),
     "weekly":    ("摸 金 虾 · 周 度 复 盘", "MO JIN XIA · WEEKLY REVIEW",       "周报"),
+    "rank":      ("摸 金 虾 · 引 擎 二 排 名", "MO JIN XIA · ENGINE II RANKING", "引擎二"),
+}
+
+CONCLUSION_LABELS = {
+    "premarket": "📊 盘前定调",
+    "close":     "📊 收盘定调",
+    "weekly":    "📊 周度总结",
+    "rank":      "📊 排名摘要",
 }
 
 def md_to_html(md_text, date_str=None, report_type="premarket", custom_title=None):
@@ -201,8 +209,9 @@ def md_to_html(md_text, date_str=None, report_type="premarket", custom_title=Non
     body = "\n    ".join(body_parts)
 
     # Generate conclusion box from known data
-    conclusion = """<div class="conclusion-box">
-      <h3>📊 盘前定调</h3>
+    conclusion_label = CONCLUSION_LABELS.get(report_type, "📊 盘前定调")
+    conclusion = f"""<div class="conclusion-box">
+      <h3>{conclusion_label}</h3>
       <p style="text-align:center;font-size:15px;font-weight:700;color:#b30000;margin-top:8px;">
         🏁 详细分析请见上方各板块
       </p>
@@ -298,7 +307,7 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="摸金虾 · 报告图片生成器")
     ap.add_argument("input", nargs="?", help="Markdown 文件路径（不传则从 stdin 读取）")
-    ap.add_argument("--type", choices=["premarket","close","weekly"], default="premarket",
+    ap.add_argument("--type", choices=["premarket","close","weekly","rank"], default="premarket",
                     help="报告类型 (default: premarket)")
     ap.add_argument("--title", help="自定义标题（覆盖默认）")
     args = ap.parse_args()
